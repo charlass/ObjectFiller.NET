@@ -4,47 +4,13 @@ using ObjectFiller;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
 using ObjectFiller.FillerPlugins;
+using ObjectFiller.Test.TestPoco.Person;
 
 namespace ObjectFiller.Test
 {
 	[TestClass]
 	public class PatternGeneratorTest
 	{
-		[TestMethod]
-		public void Must_be_able_to_handle_private_setters()
-		{
-			var filler = new ObjectFiller<ClassWithPrivateStuff>();
-			var obj = filler.Fill();
-
-			Assert.AreNotEqual(0, obj.WithPrivateSetter, "Must be able to set even a private setter");
-			Assert.AreEqual(123, obj.WithoutSetter, "Cannot set that... must get default value");
-		}
-
-		[TestMethod]
-		public void Must_be_able_to_handle_inheritance_and_sealed()
-		{
-			var filler = new ObjectFiller<InheritedClass>();
-			var obj = filler.Fill();
-
-			Assert.AreNotEqual(0, obj.NormalNumber);
-			Assert.AreNotEqual(0, obj.OverrideNormalNumber);
-			Assert.AreNotEqual(0, obj.SealedOverrideNormalNumber);
-		}
-
-		[TestMethod, Ignore]
-		public void Must_be_able_to_handle_arrays()
-		{
-			var filler = new ObjectFiller<WithArrays>();
-			filler.Setup()
-				.RegisterInterface<int[],int[]>();
-				//.SetupFor<int[]>();
-			var obj = filler.Fill();
-
-			Assert.IsNotNull(obj.Ints);
-			Assert.IsNotNull(obj.Strings);
-			Assert.IsNotNull(obj.Interfaces);
-		}
-
 		[TestMethod]
 		public void StringPatternGenerator_A()
 		{
@@ -215,31 +181,22 @@ namespace ObjectFiller.Test
 			Assert.AreEqual("-7", sut.GetValue());
 		}
 
+		[TestMethod]
+		public void StringPatternGenerator_ObjectFiller_intergation_test()
+		{
+			ObjectFiller<Person> pFiller = new ObjectFiller<Person>();
+
+			pFiller.Setup()
+				.RegisterInterface<IAddress, Address>()
+				.SetupFor<Address>()
+				.RandomizerForProperty(new PatternGenerator("{A}{a:2-8}"), x => x.City)
+				.RandomizerForProperty(new PatternGenerator("CA {C:10000}"), x => x.PostalCode)
+				.RandomizerForProperty(new PatternGenerator("Main Street {C:100,10} NE"), x => x.Street);
+
+			var person = pFiller.Fill();
+
+		}
+
 	}
 
-	public sealed class ClassWithPrivateStuff
-	{
-		public int WithPrivateSetter { get; private set; }
-		public int WithoutSetter { get { return 123; } }
-	}
-
-	public class BaseClass
-	{
-		public int NormalNumber { get; set; }
-		public virtual int OverrideNormalNumber { get; set; }
-		public virtual int SealedOverrideNormalNumber { get; set; }
-	}
-
-	public class InheritedClass : BaseClass
-	{
-		public override int OverrideNormalNumber { get; set; }
-		public override sealed int SealedOverrideNormalNumber { get; set; }
-	}
-
-	public class WithArrays
-	{
-		public int[] Ints { get; set; }
-		public string[] Strings { get; set; }
-		public IDisposable[] Interfaces { get; set; }
-	}
 }
